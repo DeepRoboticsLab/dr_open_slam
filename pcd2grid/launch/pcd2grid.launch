@@ -1,0 +1,60 @@
+<launch>
+    <node pkg="octomap_server" type="my_octomap_node" name="my_octomap" output="screen">
+        <param name="file_path" value="/home/ysc/lite_cog/system/map/lite3.pcd"/>
+        <param name="filter_leaf_size_m" value="0.05"/>
+
+        <!-- <param name="map_file" value=""/> -->
+
+        <param name="frame_id" type="string" value="/map"/>
+        <!-- <param name="base_frame_id" value="base_footprint"/>
+        <param name="height_map" value="true"/>
+        <param name="colored_map" value="false"/>
+        <param name="color_factor" value="0.8"/> -->
+
+        <!-- <param name="pointcloud_min_x" value=""/>
+        <param name="pointcloud_max_x" value=""/>
+        <param name="pointcloud_min_y" value=""/>
+        <param name="pointcloud_max_y" value=""/> -->
+        <param name="pointcloud_min_z" value="-0.1"/>
+        <param name="pointcloud_max_z" value="0.6"/>
+        <param name="occupancy_min_z" value="-0.1"/>
+        <param name="occupancy_max_z" value="0.6"/>
+        <!-- <param name="min_x_size" value="0.0"/>
+        <param name="min_y_size" value="0.0"/> -->
+
+        <!-- <param name="filter_speckles" value="false"/>
+        <param name="filter_ground" value="false"/>
+        <param name="ground_filter/distance" value="0.04"/>
+        <param name="ground_filter/angle" value="0.15"/>
+        <param name="ground_filter/plane_distance" value="0.07"/> -->
+
+        <param name="sensor_model/max_range" value="100.0"/>
+        <param name="sensor_model/min_range" value="-1.0"/>
+
+        <param name="resolution" value="0.05"/>
+        <!-- <param name="sensor_model/hit" value="0.7"/>
+        <param name="sensor_model/miss" value="0.4"/>
+        <param name="sensor_model/min" value="0.12"/>
+        <param name="sensor_model/max" value="0.97"/> -->
+        <param name="compress_map" value="true"/>
+        <!-- <param name="incremental_2D_projection", value="false"/> -->
+
+        <!-- <param name="color/r" value="0.0"/>
+        <param name="color/g" value="0.0"/>
+        <param name="color/b" value="0.0"/>
+        <param name="color/a" value="0.0"/>
+
+        <param name="color_free/r" value="0.0"/>
+        <param name="color_free/g" value="1.0"/>
+        <param name="color_free/b" value="0.0"/>
+        <param name="color_free/a" value="1.0"/> -->
+
+        <param name="publish_free_space" value="false"/>
+
+        <param name="latch" value="true"/>
+    
+        <remap from="/projected_map" to="/map" />
+    </node>
+
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find pcd2grid)/rviz/config.rviz" />
+</launch>
