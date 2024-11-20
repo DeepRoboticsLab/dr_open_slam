@@ -44,23 +44,35 @@ set(LINK_LIBS
   ${PCL_LIBRARIES}
 )
 
-add_library(${PROJECT_NAME} src/MyOctomap.cpp)
-target_link_libraries(${PROJECT_NAME} ${LINK_LIBS})
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
+add_library(MyOctomap src/MyOctomap.cpp)
+target_link_libraries(MyOctomap ${LINK_LIBS})
+add_dependencies(MyOctomap ${PROJECT_NAME}_gencfg)
 
 add_executable(my_octomap_node src/my_octomap_node.cpp)
-target_link_libraries(my_octomap_node ${PROJECT_NAME} ${LINK_LIBS})
+target_link_libraries(my_octomap_node MyOctomap ${LINK_LIBS})
 
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS 
+    MyOctomap
     my_octomap_node
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-# add_library(${PROJECT_NAME} src/OctomapServer.cpp src/OctomapServerMultilayer.cpp src/TrackingOctomapServer.cpp)
-# target_link_libraries(${PROJECT_NAME} ${LINK_LIBS})
-# add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
+add_library(${PROJECT_NAME} src/OctomapServer.cpp src/OctomapServerMultilayer.cpp src/TrackingOctomapServer.cpp)
+target_link_libraries(${PROJECT_NAME} ${LINK_LIBS})
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
+
+add_executable(octomap_server_node src/octomap_server_node.cpp)
+target_link_libraries(octomap_server_node ${PROJECT_NAME} ${LINK_LIBS})
+
+# install targets:
+install(TARGETS ${PROJECT_NAME}
+  octomap_server_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 # add_library(${PROJECT_NAME} src/OctomapServer.cpp src/OctomapServerMultilayer.cpp src/TrackingOctomapServer.cpp)
 # target_link_libraries(${PROJECT_NAME} ${LINK_LIBS})

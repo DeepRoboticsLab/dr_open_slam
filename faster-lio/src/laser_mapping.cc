@@ -64,12 +64,12 @@ bool LaserMapping::LoadParams(ros::NodeHandle &nh) {
     nh.param<bool>("publish/dense_publish_en", dense_pub_en_, false);
     nh.param<bool>("publish/scan_bodyframe_pub_en", scan_body_pub_en_, true);
     nh.param<bool>("publish/scan_effect_pub_en", scan_effect_pub_en_, false);
-    nh.param<std::string>("publish/tf_imu_frame", tf_imu_frame_, "body");
-    nh.param<std::string>("publish/tf_world_frame", tf_world_frame_, "camera_init");
+    nh.param<std::string>("publish/tf_imu_frame", tf_imu_frame_, "base_link");
+    nh.param<std::string>("publish/tf_world_frame", tf_world_frame_, "map");
 
     nh.param<int>("max_iteration", options::NUM_MAX_ITERATIONS, 4);
     nh.param<float>("esti_plane_threshold", options::ESTI_PLANE_THRESHOLD, 0.1);
-    nh.param<std::string>("map_file_path", map_file_path_, "");
+    nh.param<std::string>("map_file_path", map_file_path_, "/home/nvidia/lite_cog/system/map/lite3");
     nh.param<bool>("common/time_sync_en", time_sync_en_, false);
     nh.param<double>("filter_size_surf", filter_size_surf_min, 0.5);
     nh.param<double>("filter_size_map", filter_size_map_min_, 0.0);
@@ -127,7 +127,7 @@ bool LaserMapping::LoadParams(ros::NodeHandle &nh) {
     }
 
     path_.header.stamp = ros::Time::now();
-    path_.header.frame_id = "camera_init";
+    path_.header.frame_id = tf_world_frame_;
 
     voxel_scan_.setLeafSize(filter_size_surf_min, filter_size_surf_min, filter_size_surf_min);
 
@@ -157,8 +157,8 @@ bool LaserMapping::LoadParamsFromYAML(const std::string &yaml_file) {
         dense_pub_en_ = yaml["publish"]["dense_publish_en"].as<bool>();
         scan_body_pub_en_ = yaml["publish"]["scan_bodyframe_pub_en"].as<bool>();
         scan_effect_pub_en_ = yaml["publish"]["scan_effect_pub_en"].as<bool>();
-        tf_imu_frame_ = yaml["publish"]["tf_imu_frame"].as<std::string>("body");
-        tf_world_frame_ = yaml["publish"]["tf_world_frame"].as<std::string>("camera_init");
+        tf_imu_frame_ = yaml["publish"]["tf_imu_frame"].as<std::string>("base_link");
+        tf_world_frame_ = yaml["publish"]["tf_world_frame"].as<std::string>("map");
         path_save_en_ = yaml["path_save_en"].as<bool>();
 
         options::NUM_MAX_ITERATIONS = yaml["max_iteration"].as<int>();
@@ -257,7 +257,7 @@ void LaserMapping::SubAndPubToROS(ros::NodeHandle &nh) {
 
     // ROS publisher init
     path_.header.stamp = ros::Time::now();
-    path_.header.frame_id = "camera_init";
+    path_.header.frame_id = tf_world_frame_;
 
     pub_laser_cloud_world_ = nh.advertise<sensor_msgs::PointCloud2>("/cloud_registered", 100000);
     pub_laser_cloud_body_ = nh.advertise<sensor_msgs::PointCloud2>("/cloud_registered_body", 100000);
@@ -671,7 +671,7 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
 void LaserMapping::PublishPath(const ros::Publisher pub_path) {
     SetPosestamp(msg_body_pose_);
     msg_body_pose_.header.stamp = ros::Time().fromSec(lidar_end_time_);
-    msg_body_pose_.header.frame_id = "camera_init";
+    msg_body_pose_.header.frame_id = tf_world_frame_;
 
     /*** if path is too large, the rvis will crash ***/
     path_.poses.push_back(msg_body_pose_);
@@ -681,8 +681,8 @@ void LaserMapping::PublishPath(const ros::Publisher pub_path) {
 }
 
 void LaserMapping::PublishOdometry(const ros::Publisher &pub_odom_aft_mapped) {
-    odom_aft_mapped_.header.frame_id = "camera_init";
-    odom_aft_mapped_.child_frame_id = "body";
+    odom_aft_mapped_.header.frame_id = tf_world_frame_;
+    odom_aft_mapped_.child_frame_id = tf_imu_frame_;
     odom_aft_mapped_.header.stamp = ros::Time().fromSec(lidar_end_time_);  // ros::Time().fromSec(lidar_end_time_);
     SetPosestamp(odom_aft_mapped_.pose);
     pub_odom_aft_mapped.publish(odom_aft_mapped_);
@@ -731,7 +731,7 @@ void LaserMapping::PublishFrameWorld() {
         sensor_msgs::PointCloud2 laserCloudmsg;
         pcl::toROSMsg(*laserCloudWorld, laserCloudmsg);
         laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time_);
-        laserCloudmsg.header.frame_id = "camera_init";
+        laserCloudmsg.header.frame_id = tf_world_frame_;
         pub_laser_cloud_world_.publish(laserCloudmsg);
         publish_count_ -= options::PUBFRAME_PERIOD;
     }
@@ -745,14 +745,10 @@ void LaserMapping::PublishFrameWorld() {
         static int scan_wait_num = 0;
         scan_wait_num++;
         if (pcl_wait_save_->size() > 0 && pcd_save_interval_ > 0 && scan_wait_num >= pcd_save_interval_) {
-            pcd_index_++;
-            // std::string all_points_dir(std::string(std::string(ROOT_DIR) + "PCD/scans_") + std::to_string(pcd_index_) +
-            //                            std::string(".pcd"));
-            std::string all_points_dir(std::string("/home/ysc/lite_cog/system/map/lite3") + std::string(".pcd"));
+            std::string all_points_dir(map_file_path_ + std::string(".pcd"));
             pcl::PCDWriter pcd_writer;
             LOG(INFO) << "current scan saved to /PCD/" << all_points_dir;
             pcd_writer.writeBinary(all_points_dir, *pcl_wait_save_);
-            pcl_wait_save_->clear();
             scan_wait_num = 0;
         }
     }
@@ -769,7 +765,7 @@ void LaserMapping::PublishFrameBody(const ros::Publisher &pub_laser_cloud_body) 
     sensor_msgs::PointCloud2 laserCloudmsg;
     pcl::toROSMsg(*laser_cloud_imu_body, laserCloudmsg);
     laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time_);
-    laserCloudmsg.header.frame_id = "body";
+    laserCloudmsg.header.frame_id = tf_imu_frame_;
     pub_laser_cloud_body.publish(laserCloudmsg);
     publish_count_ -= options::PUBFRAME_PERIOD;
 }
@@ -784,7 +780,7 @@ void LaserMapping::PublishFrameEffectWorld(const ros::Publisher &pub_laser_cloud
     sensor_msgs::PointCloud2 laserCloudmsg;
     pcl::toROSMsg(*laser_cloud, laserCloudmsg);
     laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time_);
-    laserCloudmsg.header.frame_id = "camera_init";
+    laserCloudmsg.header.frame_id = tf_world_frame_;
     pub_laser_cloud_effect_world.publish(laserCloudmsg);
     publish_count_ -= options::PUBFRAME_PERIOD;
 }
@@ -856,12 +852,8 @@ void LaserMapping::Finish() {
     /* 1. make sure you have enough memories
     /* 2. pcd save will largely influence the real-time performences **/
     if (pcl_wait_save_->size() > 0 && pcd_save_en_) {
-        // std::string file_name = std::string("scans.pcd");
-        // std::string all_points_dir(std::string(std::string(ROOT_DIR) + "PCD/") + file_name);
-        // std::string file_name = std::string("lite3.pcd");
-        std::string all_points_dir(std::string("/home/ysc/lite_cog/system/map/lite3") + std::string(".pcd"));
+        std::string all_points_dir(map_file_path_ + std::string(".pcd"));
         pcl::PCDWriter pcd_writer;
-        // LOG(INFO) << "current scan saved to /PCD/" << file_name;
         LOG(INFO) << "current scan saved to " << all_points_dir;
         pcd_writer.writeBinary(all_points_dir, *pcl_wait_save_);
     }
