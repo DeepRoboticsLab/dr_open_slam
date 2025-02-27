@@ -1,6 +1,6 @@
 <launch>
     <node pkg="octomap_server" type="my_octomap_node" name="my_octomap" output="screen">
-        <param name="file_path" value="/home/zox/slam/lite3.pcd"/>
+        <param name="file_path" value="/home/ysc/lite_cog/system/map/lite3.pcd"/>
         <param name="filter_leaf_size_m" value="0.05"/>
 
         <!-- <param name="map_file" value=""/> -->
@@ -15,10 +15,10 @@
         <param name="pointcloud_max_x" value=""/>
         <param name="pointcloud_min_y" value=""/>
         <param name="pointcloud_max_y" value=""/> -->
-        <param name="pointcloud_min_z" value="-0.1"/>
-        <param name="pointcloud_max_z" value="0.6"/>
-        <param name="occupancy_min_z" value="-0.1"/>
-        <param name="occupancy_max_z" value="0.6"/>
+        <param name="pointcloud_min_z" value="-0.2"/>
+        <param name="pointcloud_max_z" value="1.2"/>
+        <param name="occupancy_min_z" value="0.0"/>
+        <param name="occupancy_max_z" value="1.0"/>
         <!-- <param name="min_x_size" value="0.0"/>
         <param name="min_y_size" value="0.0"/> -->
 

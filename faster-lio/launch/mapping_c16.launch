@@ -4,7 +4,7 @@
     <arg name="rviz" default="true" />
 
     <!-- load map path from bash -->
-    <arg name="map_save_path" default="/home/zox/slam/lite3" />
+    <arg name="map_save_path" default="/home/ysc/lite_cog/system/map/lite3" />
     <param name="map_file_path" type="string" value="$(arg map_save_path)"/>
 
     <rosparam command="load" file="$(find faster_lio)/config/c16.yaml" />
